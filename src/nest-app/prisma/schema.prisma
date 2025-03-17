@@ -1,0 +1,50 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url  	    = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+// users cant upload a picture as of now - will figure it out soon
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  name      String
+  password  String
+  email     String   @unique
+  posts     Post[]
+  verified  Boolean  @default(false)
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// cant post a picture as of now - will figure it out soon
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  comments  Comment[]
+  published Boolean  @default(false)
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// comments can have nested comments
+model Comment {
+  id         Int       @id @default(autoincrement())
+  postId     Int
+  content    String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  post       Post      @relation(fields: [postId], references: [id])
+  parentId   Int?
+  parent     Comment?  @relation("CommentToComment", fields: [parentId], references: [id])
+  replies    Comment[] @relation("CommentToComment")
+}
