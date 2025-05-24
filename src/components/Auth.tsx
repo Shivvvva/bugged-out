@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { AuthForm } from './AuthForm'
 import { z } from 'zod'
+import { ThemeToggle } from './theme-toggle'
 
 const loginSchema = z.object({
-  email: z.string().email({ message: 'Invalid email' }),
+  email: z.string().email({ message: 'You gotta be kiddin\' me' }),
   password: z.string().min(6, { message: 'Too short homie' })
 })
 
 const signupSchema = z.object({
-  username: z.string().min(2, { message: 'Enter a valid name' }),
-  email: z.string().email({ message: 'Invalid email' }),
+  username: z.string().min(2, { message: 'You can do better than this man' }),
+  email: z.string().email({ message: 'You gotta be kiddin\' me' }),
   password: z.string().min(6, { message: 'Nahh, get that weak sh*t outta here' })
 })
 
@@ -23,6 +24,8 @@ const Auth = () => {
   const isLogin = mode === 'login'
 
   return (
+    <>
+    <ThemeToggle />
     <div className='flex flex-col w-full h-screen justify-center'>
 
       {isLogin ? (
@@ -50,11 +53,12 @@ const Auth = () => {
       )}
 
       <div className='text-center mt-4'>
-        <button onClick={toggleMode} className='text-blue-500 hover:underline'>
+        <button onClick={toggleMode} className='text-blue-500 hover:underline cursor-pointer'>
           {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
         </button>
       </div>
     </div>
+    </>
   )
 }
 
