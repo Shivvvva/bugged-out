@@ -29,4 +29,5 @@ dist-ssr
 /src/nest-app/prisma/migrations
 
 #env
+.env
 /src/nest-app/.env
