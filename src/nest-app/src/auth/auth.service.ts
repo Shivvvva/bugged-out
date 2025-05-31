@@ -11,44 +11,72 @@ export class AuthService {
     private jwt: JwtService,
   ) {}
 
-  async signup(signupDto: SignupDto) {
-    const hashed = await bcrypt.hash(signupDto.password, 10);
-    const user = await this.databaseService.user.create({
-      data: {
-        name: signupDto.name,
-        username: signupDto.username,
-        email: signupDto.email,
-        password: hashed,
-      },
-    });
+  async getMe(user: any) {
+    try {
+      const userId = user.sub;
+      return this.databaseService.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          email: true,
+        },
+      });
+    } catch (error) {
+      throw new ForbiddenException('User not found');
+    }
+  }
 
-    return this.signToken(user.id, user.username);
+  async signup(signupDto: SignupDto) {
+    try {
+      const hashed = await bcrypt.hash(signupDto.password, 10);
+      const user = await this.databaseService.user.create({
+        data: {
+          name: signupDto.name,
+          username: signupDto.username,
+          email: signupDto.email,
+          password: hashed,
+        },
+      });
+
+      return this.signToken(user.id, user.username);
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new ForbiddenException('Email or username already exists');
+      }
+      throw new ForbiddenException('Signup failed');
+    }
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.databaseService.user.findUnique({
-      where: { email: loginDto.email },
-    });
+    try {
+      const user = await this.databaseService.user.findUnique({
+        where: { email: loginDto.email },
+      });
 
-    if (!user) {
-      throw new ForbiddenException('User not found');
+      if (!user) {
+        throw new ForbiddenException('User not found');
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        loginDto.password,
+        user.password,
+      );
+      if (!isPasswordValid) {
+        throw new ForbiddenException('Invalid password');
+      }
+
+      return this.signToken(user.id, user.email);
+    } catch (error) {
+      throw new ForbiddenException('Login failed');
     }
-
-    const isPasswordValid = await bcrypt.compare(
-      loginDto.password,
-      user.password,
-    );
-    if (!isPasswordValid) {
-      throw new ForbiddenException('Invalid password');
-    }
-
-    return this.signToken(user.id, user.email);
   }
 
   private signToken(userId: number, email: string) {
     const payload = { sub: userId, email };
     const token = this.jwt.sign(payload, { expiresIn: '7d' });
 
-    return { access_token: token };
+    return token;
   }
 }

@@ -30,6 +30,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { AvatarFallback } from "@radix-ui/react-avatar";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 const items = [
   {
@@ -49,14 +52,65 @@ const items = [
   },
 ];
 
+type User = {
+  id: number;
+  email: string;
+  name: string;
+  username: string;
+};
+
 const SidebarComponent = () => {
   const { state, isMobile } = useSidebar();
+  const [user, setUser] = useState<User | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get("/api/auth/me", {
+          withCredentials: true,
+        });
+
+        const userData = res.data;
+
+        setUser(userData);
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      const res = await axios.post(
+        `/api/auth/logout`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (res.status !== 201) {
+        throw new Error(res.data?.message || "Logout failed");
+      }
+
+      setUser(null);
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="flex flex-row items-center cursor-default">
         <Bug />
-        <h3>{state === "expanded" ? "bugged out" : ""}</h3>
+        {/* <h3>{state === "expanded" ? "bugged out" : ""}</h3> */}
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -94,10 +148,8 @@ const SidebarComponent = () => {
                     <AvatarFallback className="rounded-lg">SH</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">shiva</span>
-                    <span className="truncate text-xs">
-                      shivva812@gmail.com
-                    </span>
+                    <span className="truncate font-semibold">{user?.name}</span>
+                    <span className="truncate text-xs">{user?.email}</span>
                   </div>
                   <ChevronsUpDown />
                 </SidebarMenuButton>
@@ -115,10 +167,10 @@ const SidebarComponent = () => {
                       <AvatarFallback className="rounded-lg">SH</AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">shiva</span>
-                      <span className="truncate text-xs">
-                        shivva812@gmail.com
+                      <span className="truncate font-semibold">
+                        {user?.name}
                       </span>
+                      <span className="truncate text-xs">{user?.email}</span>
                     </div>
                   </div>
                 </DropdownMenuLabel>
@@ -142,7 +194,10 @@ const SidebarComponent = () => {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem variant="destructive">
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={handleLogout}
+                  >
                     <LogOut />
                     Logout
                   </DropdownMenuItem>

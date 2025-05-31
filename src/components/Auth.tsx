@@ -2,6 +2,8 @@ import { useState } from "react";
 import { AuthForm } from "./AuthForm";
 import { z } from "zod";
 import { ThemeToggle } from "./theme-toggle";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "You gotta be kiddin' me" }),
@@ -18,6 +20,8 @@ const signupSchema = z.object({
 });
 
 const Auth = () => {
+  const navigate = useNavigate();
+
   const [mode, setMode] = useState<"login" | "signup">("login");
 
   const toggleMode = () => {
@@ -37,22 +41,18 @@ const Auth = () => {
             defaultValues={{ email: "", password: "" }}
             onSubmit={async (values) => {
               try {
-                const res = await fetch(`/api/auth/login`, {
-                  method: "POST",
+                const res = await axios.post(`/api/auth/login`, values, {
+                  withCredentials: true,
                   headers: {
                     "Content-Type": "application/json",
                   },
-                  body: JSON.stringify(values),
                 });
 
-                if (!res.ok) {
-                  const err = await res.json();
-                  throw new Error(err.message || "Login failed");
+                if (res.status !== 201) {
+                  throw new Error(res.data?.message || "Login failed");
                 }
 
-                const data = await res.json();
-
-                console.log("Login successful:", data);
+                navigate("/home");
               } catch (error) {
                 console.error("Login failed:", error);
               }
@@ -66,26 +66,20 @@ const Auth = () => {
             defaultValues={{ username: "", name: "", email: "", password: "" }}
             onSubmit={async (values) => {
               try {
-                const res = await fetch(`/api/auth/signup`, {
-                  method: "POST",
+                const res = await axios.post(`/api/auth/signup`, values, {
+                  withCredentials: true,
                   headers: {
                     "Content-Type": "application/json",
                   },
-                  body: JSON.stringify(values),
                 });
 
-                if (!res.ok) {
-                  const err = await res.json();
-                  throw new Error(err.message || "Signup failed");
+                if (res.status !== 201) {
+                  throw new Error(res.data?.message || "Signup failed");
                 }
 
-                const data = await res.json();
+                console.log("Signed up!");
 
-                console.log("🎉 Signed up!", data);
-
-                if (data.access_token) {
-                  localStorage.setItem("token", data.access_token);
-                }
+                navigate("/home");
               } catch (error) {
                 console.error("Signup failed:", error);
               }
